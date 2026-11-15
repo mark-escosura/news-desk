@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>News Desk</title><meta name="description" content="Local, world and markets headlines from public RSS feeds">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="News Desk">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--fg:#14171c;--mut:#5f6773;--line:#e3e6ea;--acc:#c4122f;--chip:#eceef1}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#171b22;--fg:#e8eaed;--mut:#9aa3ae;--line:#262c35;--acc:#ff4d5e;--chip:#20252d}}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:var(--fg)}
+body{font:16px -apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',Roboto,Arial,sans-serif;-webkit-text-size-adjust:100%;padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line);padding:calc(env(safe-area-inset-top) + 10px) 16px 0}
+.wrap{max-width:720px;margin:0 auto}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+h1{font-size:24px;font-weight:800;letter-spacing:-.4px}h1 span{color:var(--acc)}
+#upd{font-size:12.5px;color:var(--mut);text-align:right;white-space:nowrap}
+nav{display:flex;gap:4px;margin:10px 0 0}
+nav button{flex:1;font:inherit;font-size:15px;font-weight:700;padding:10px 0 11px;background:none;border:0;color:var(--mut);border-bottom:3px solid transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+nav button.on{color:var(--fg);border-bottom-color:var(--acc)}
+nav button small{font-weight:600;font-size:11.5px;opacity:.7;margin-left:3px}
+main{padding:12px 12px 0}
+.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px 12px;margin-bottom:10px;color:inherit;text-decoration:none}
+.card:active{opacity:.7}
+.meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:12.5px;color:var(--mut);margin-bottom:5px}
+.src{font-weight:700;color:var(--acc)}
+.card h2{font-size:16.5px;line-height:1.3;font-weight:650;letter-spacing:-.1px}
+.card p{font-size:14px;line-height:1.4;color:var(--mut);margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.also{font-size:11.5px;color:var(--mut);margin-top:7px}
+.day{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:16px 4px 8px}
+.day:first-child{margin-top:4px}
+.empty{color:var(--mut);text-align:center;padding:40px 10px}
+.off{font-size:12px;background:var(--chip);color:var(--mut);border-radius:8px;padding:6px 10px;margin:0 0 10px;display:none}
+footer{font-size:11.5px;color:var(--mut);text-align:center;padding:14px 20px}
+</style></head><body>
+<header><div class="wrap"><div class="top"><h1>News<span>Desk</span></h1><div id="upd">Loading…</div></div>
+<nav><button data-t="local">Local<small></small></button><button data-t="world">World<small></small></button><button data-t="markets">Markets<small></small></button></nav></div></header>
+<main class="wrap"><div class="off" id="off">Offline: showing the last saved headlines.</div><div id="list"><div class="empty">Loading headlines…</div></div></main>
+<footer class="wrap">Headlines and short excerpts from each outlet's public RSS feed. Tap a card to read the full story at the source.</footer>
+<script>
+const PT='America/Los_Angeles';
+const fTime=new Intl.DateTimeFormat('en-US',{timeZone:PT,hour:'numeric',minute:'2-digit'});
+const fDay=new Intl.DateTimeFormat('en-US',{timeZone:PT,weekday:'long',month:'short',day:'numeric'});
+const fFull=new Intl.DateTimeFormat('en-US',{timeZone:PT,month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let data=null,tab=localStorage.getItem('nd-tab')||'local';
+function ago(d){const m=Math.round((Date.now()-d)/60000);if(m<1)return'just now';if(m<60)return m+'m ago';const h=Math.round(m/60);return h<24?h+'h ago':Math.round(h/24)+'d ago'}
+function render(){
+  document.querySelectorAll('nav button').forEach(b=>{b.classList.toggle('on',b.dataset.t===tab);const n=data?.tabs?.[b.dataset.t]?.length;b.querySelector('small').textContent=n?n:''});
+  if(!data)return;
+  const u=new Date(data.updated);document.getElementById('upd').textContent='Updated '+fFull.format(u)+' PT';
+  const items=data.tabs[tab]||[];if(!items.length){list.innerHTML='<div class="empty">No stories right now.</div>';return}
+  let h='',last='';const today=fDay.format(new Date());
+  for(const i of items){const d=new Date(i.published),dl=fDay.format(d);
+    if(dl!==last){h+=`<div class="day">${dl===today?'Today':esc(dl)}</div>`;last=dl}
+    h+=`<a class="card" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer"><div class="meta"><span class="src">${esc(i.source)}</span><span>${fTime.format(d)} PT · ${ago(d)}</span></div><h2>${esc(i.title)}</h2>${i.summary?`<p>${esc(i.summary)}</p>`:''}${i.also?.length?`<div class="also">Also: ${esc(i.also.slice(0,4).join(', '))}${i.also.length>4?' +'+(i.also.length-4):''}</div>`:''}</a>`}
+  list.innerHTML=h;
+}
+const list=document.getElementById('list');
+document.querySelector('nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;tab=b.dataset.t;localStorage.setItem('nd-tab',tab);render();scrollTo(0,0)};
+async function load(){
+  try{const r=await fetch('news.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;data=await r.json();document.getElementById('off').style.display='none'}
+  catch(e){try{const c=await caches.match('news.json');if(c){data=await c.json();document.getElementById('off').style.display='block'}}catch(_){}
+    if(!data)list.innerHTML='<div class="empty">Could not load headlines. Check your connection.</div>'}
+  render();
+}
+load();
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')load()});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
