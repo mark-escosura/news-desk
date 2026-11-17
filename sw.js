@@ -1,5 +1,5 @@
 // Network-first so headlines stay fresh; cached copy only used when offline. No user data is stored.
-const C = 'news-desk-v1';
+const C = 'news-desk-v2';
 const SHELL = ['./', 'index.html', 'news.json', 'manifest.json', 'icon-192.png', 'apple-touch-icon.png', 'icon.svg'];
 self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(C).then(c => c.addAll(SHELL))); });
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== C).map(k => caches.delete(k)))).then(() => self.clients.claim())));
